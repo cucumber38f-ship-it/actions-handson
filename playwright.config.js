@@ -1,5 +1,12 @@
 import { defineConfig } from "@playwright/test";
 
+const remoteURL = process.env.BASE_URL?.trim();
+
+const baseURL = remoteURL
+    ? `${remoteURL.replace(/\/+$/, "")}`
+    : "http://127.0.0.1:4173/";
+
+
 export default defineConfig({
     // ブラウザ用テストを置くフォルダ
     testDir: "./e2e",
@@ -26,7 +33,7 @@ export default defineConfig({
 
     use: {
         // page.goto("/")のアクセス先
-        baseURL: "http://127.0.0.1:4173",
+        baseURL,
 
         // インストールしたChromiumで検証する
         browserName: "chromium",
@@ -38,16 +45,21 @@ export default defineConfig({
         trace: "retain-on-failure",
     },
 
-    webServer: {
-        // 毎回ビルドし、実際に公開するdistを配信する
-        // &&は「ビルドに成功した場合だけサーバーを起動する」の意味
-        command: 
-          "npm run build && npx http-server dist -a 127.0.0.1 -p 4173 -c-1",
+    webServer: remoteURL
+        ? undefined
+        : {
+            // 毎回ビルドし、実際に公開するdistを配信する
+            // &&は「ビルドに成功した場合だけサーバーを起動する」の意味
+            command: 
+                "npm run build && npx http-server dist -a 127.0.0.1 -p 4173 -c-1",
 
-        // このURLが応答するまで待ってからテストを始める
-        reuseExistingServer: false,
+            // テスト開始前にサーバーが接続可能になるまで待つ
+            url: baseURL,
 
-        // サーバー起動を待つ上限
-        timeout: 60_000,
-    },
+            // このURLが応答するまで待ってからテストを始める
+            reuseExistingServer: false,
+
+            // サーバー起動を待つ上限
+            timeout: 60_000,
+        },
 });

@@ -3,56 +3,59 @@ name: Site Check
 on:
   schedule:
     - cron: "17 0 * * *"
-  workflow_dispatch:
-    inputs: 
-      missing_path:
-        description: "存在しないURLで失敗することを確認する"
-        type: boolean
-        default: false
+  workflow_dispatch: 
     
-permissions: {}
+permissions:
+  contents: read 
 
 jobs:
   check:
     name: Check published site
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10 
 
     env:
-      SITE_URL: ${{ vars.SITE_URL }}
-      MISSING_PATH: ${{ inputs.missing_path }}
+      # CIではGitフックを設定しない
+      HUSKY: "0"
+      # GitHubの設定値を、Playwrightが読む環境変数へ渡す
+      BASE_URL: ${{ vars.SITE_URL }}
     
     steps:
-      - name: 公開ページとJavaScriptsを取得
+      # 空だとローカルテストに切り替わってしまうため、
+      # 公開URLが設定されていない場合は、明示的に失敗させる
+      - name: 公開URLの設定を確認
         shell: bash
         run: |
-          set -euo pipefail
-
-          if [[ -z "$SITE_URL" ]]; then
+          if [[ -z "${BASE_URL//[:space:]}" ]]; then
             echo "::error::VariablesにSITE_URLを登録してください"
             exit 1
-          fi
-
-          base_url="${SITE_URL%/}"
-
-          if [[ "$MISSING_PATH" == "true" ]]; then
-            base_url = "$base_url/__missing_for_test__"
           fi 
+      
+      # 公開ページとは別に、操作手順を書いたテストコードを取得する
+      - name: テストコードを取得
+        users: actions/checkout@v4
 
-          for file in index.html app.js price.js; do
-            url="$base_url/$file"
-            echo "確認中: $url"
+      - name: Node.jsを準備
+        uses: actions/setup-node@v4 
+        with: 
+          node-version: "22"
+          cache: npm 
+        
+      # lockファイルと同じバージョンの依存パッケージを入れる
+      - name: 依存パッケージをインストール
+        run: npm ci 
 
-            curl \
-              --fail \
-              --silent \
-              --show-error \
-              --location \
-              --connect-timeout 10 \
-              --max-time 30 \
-              --retry 2 \
-              --output /dev/null \
-              "$url"
-          done
+      # ブラウザ本体と、Linuxでの実行に必要なパッケージを入れる
+      - name: Chromiumを準備
+        run: npx playwright install --with-deps chromium 
 
-          echo "すべてのファイルを取得できました" 
+      # BASE_URLがあるため、ビルドやローカルサーバー起動は行わず、
+      # 公開サイトにアクセスして、4パターンを確認する
+      - name: レポートを保存
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with: 
+          name: live-site-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore 
