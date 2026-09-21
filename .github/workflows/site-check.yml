@@ -1,0 +1,58 @@
+name: Site Check
+
+on:
+  schedule:
+    - cron: "17 0 * * *"
+  workflow_dispatch:
+    inputs: 
+      missing_path:
+        description: "存在しないURLで失敗することを確認する"
+        type: boolean
+        default: false
+    
+permissions: {}
+
+jobs:
+  check:
+    name: Check published site
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      SITE_URL: ${{ vars.SITE_URL }}
+      MISSING_PATH: ${{ inputs.missing_path }}
+    
+    steps:
+      - name: 公開ページとJavaScriptsを取得
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SITE_URL" ]]; then
+            echo "::error::VariablesにSITE_URLを登録してください"
+            exit 1
+          fi
+
+          base_url="${SITE_URL%/}"
+
+          if [[ "$MISSING_PATH" == "true" ]]; then
+            base_url = "$base_url/__missing_for_test__"
+          fi 
+
+          for file in index.html app.js price.js; do
+            url="$base_url/$file"
+            echo "確認中: $url"
+
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --retry 2 \
+              --output /dev/null \
+              "$url"
+          done
+
+          echo "すべてのファイルを取得できました" 
