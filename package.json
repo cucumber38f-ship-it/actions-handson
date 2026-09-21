@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev": "http-server . -p 8080 -c-1"
   },
   "repository": {
     "type": "git",
@@ -14,12 +15,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/cucumber38f-ship-it/actions-handson/issues"
   },
   "homepage": "https://github.com/cucumber38f-ship-it/actions-handson#readme",
   "devDependencies": {
+    "http-server": "^14.1.1",
     "husky": "^9.1.7"
   }
 }
