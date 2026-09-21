@@ -2,6 +2,9 @@ name: Hello Actions
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   hello:
@@ -21,4 +24,4 @@ jobs:
           uname -a 
           
       - name: 学習メモを表示
-        run: echo "commitではHusky、手動実行ではGitHub Actionsが動いた" 
+        run: echo "commitではHusky、手動実行ではGitHub Actionsが動いた"
