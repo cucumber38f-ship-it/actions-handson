@@ -10,7 +10,7 @@ const cases = [
 for (const { price, rate, tax, total } of cases) {
     test(`${price}円・税率${rate}%の結果を表示する`, async ({ page }) => {
         // 設定したbaseURLのトップページを開く
-        await page.goto("/", { waitUntil: "networkidle" });
+        await page.goto("./", { waitUntil: "networkidle" });
 
         // HTMLのlabelに書かれた名前で入力欄を探し、価格を入力する
         await page.getByLabel("税抜価格（円）").fill(price);
