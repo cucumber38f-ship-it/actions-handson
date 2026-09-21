@@ -19,5 +19,6 @@ jobs:
           pwd
           echo "OSの情報"
           uname -a 
+          
       - name: 学習メモを表示
         run: echo "commitではHusky、手動実行ではGitHub Actionsが動いた" 
