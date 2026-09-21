@@ -17,7 +17,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: リポジトリのコードを取得
@@ -35,8 +35,26 @@ jobs:
       - name: テストを実行
         run: npm test
 
-      - name: 公開用ファイルを生成
-        run: npm run build
+      # npm ciで入るのはライブラリなので、
+      # CIの実行マシンにもブラウザ本体と必要なOSパッケージを入れる
+      - name: テスト用ブラウザを準備
+        run: npx playwright install --with-deps chromium
+
+      # PlaywrightのwebServer設定がビルドとサーバー起動も行う
+      # ここで失敗するとTestジョブが失敗し、マージ・公開を止める
+      - name: ブラウザ操作をテスト
+        run: npm run test:e2e 
+
+      # テストに失敗しても、調査に必要なレポートは保存する
+      # キャンセルされた実行では保存処理を省く
+      - name: ブラウザテストのレポートを保存
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+          if-no-files-found: ignore 
 
       - name: 公開用ファイルを保存
         if: github.ref == 'refs/heads/main'

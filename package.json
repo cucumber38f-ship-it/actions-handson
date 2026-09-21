@@ -4,10 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test price.test.js",
     "prepare": "husky",
     "dev": "http-server . -p 8080 -c-1",
-    "build": "node build.js"
+    "build": "node build.js",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
   },
   "homepage": "https://github.com/cucumber38f-ship-it/actions-handson#readme",
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "http-server": "^14.1.1",
     "husky": "^9.1.7"
   }
