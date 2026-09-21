@@ -1,14 +1,17 @@
 name: CI
 
 on:
-  push: 
+  push:
     branches: [main]
-  pull_request: 
+  pull_request:
     branches: [main]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  HUSKY: "0"
 
 jobs:
   test:
@@ -16,21 +19,54 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
-    env: 
-      HUSKY: "0"
-    
-    steps: 
+    steps:
       - name: リポジトリのコードを取得
         uses: actions/checkout@v4
-      
+
       - name: Node.jsを準備
         uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
-        
+
       - name: 依存パッケージをインストール
-        run: npm ci 
-      
+        run: npm ci
+
       - name: テストを実行
-        run: npm test 
+        run: npm test
+
+      - name: 公開用ファイルを生成
+        run: npm run build
+
+      - name: 公開用ファイルを保存
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    permissions:
+      pages: write
+      id-token: write
+
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: GitHub Pagesを設定
+        uses: actions/configure-pages@v5
+
+      - name: GitHub Pagesへ公開
+        id: deployment
+        uses: actions/deploy-pages@v4
